@@ -201,8 +201,9 @@ public final class Algorithms
         for (int i = 0; i < samples.length; ++i)
         {
             final int[] row = samples[i];
-            correctedData[i] = new double[row.length];
-            for (int j = 0; j < row.length; ++j)
+            // We use row.length - 1 to skip the extra element that we added during sampling (1 - proportion).
+            correctedData[i] = new double[row.length - 1];
+            for (int j = 0; j < row.length - 1; ++j)
             {
                 correctedData[i][j] = row[j] * correction;
             }
@@ -237,9 +238,30 @@ public final class Algorithms
         int index = 0;
         for (final IgvRecord record : normalizee.getRawData())
         {
-            normalizedData.add(new IgvRecord(record.getStart(), record.getEnd(), averaged[index]));
+            normalizedData.add(new IgvRecord(record.getStart(), record.getEnd(), averaged[index], record.getGeneName()));
         }
         return normalizedData;
+    }
+
+    private static void groupReadsByGene(final List<IgvRecord> rawData, final Map<String, List<Double>> readsMap,
+                                         final Map<String, Gene> genomeMap)
+    {
+        for (final IgvRecord record : rawData)
+        {
+            final String geneName = record.getGeneName();
+            if (null != geneName && genomeMap.containsKey(geneName))
+            {
+                final Gene gene = genomeMap.get(geneName);
+                final int site = record.getStart();
+                final int start = gene.getStart();
+                final int end = gene.getEnd();
+                final int geneLength = end - start;
+                if (start + (0.3 * geneLength) <= site && site <= (end - (0.3 * geneLength)))
+                {
+                    readsMap.get(geneName).add(record.getReads());
+                }
+            }
+        }
     }
 
     private static Map<String, GeneFeatureMeasurements> deriveFeatures(final Genome genome,
@@ -258,7 +280,18 @@ public final class Algorithms
             rawControlData = controlMeasurements.getRawData();
             rawExperimentData = normalize(experimentMeasurements, controlMeasurements);
         }
-        // line 279 of analysis.js
+
+        final Map<String, List<Double>> controlReads = new HashMap<>();
+        final Map<String, List<Double>> experimentReads = new HashMap<>();
+        for (final String geneName : genome.getMap().keySet())
+        {
+            controlReads.put(geneName, new ArrayList<Double>());
+            experimentReads.put(geneName, new ArrayList<Double>());
+        }
+
+        groupReadsByGene(rawControlData, controlReads, genome.getMap());
+        groupReadsByGene(rawExperimentData, experimentReads, genome.getMap());
+        // Line 307 of analysis.js
     }
 
     public static Experiment analyzeExperiment(final String name, final Genome genome, final Control control,
