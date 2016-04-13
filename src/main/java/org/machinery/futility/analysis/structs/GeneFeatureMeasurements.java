@@ -4,15 +4,15 @@ public final class GeneFeatureMeasurements
 {
     private final int numTASites;
     private final int geneLength;
-    private final int numControlReads;
-    private final int numExperimentReads;
+    private final double numControlReads;
+    private final double numExperimentReads;
     private final double modifiedRatio;
     private final double p;
     private final double essentialityIndex;
     private final double fitness;
 
-    public GeneFeatureMeasurements(final int numTASites, final int geneLength, final int numControlReads,
-                                   final int numExperimentReads, final double modifiedRatio, final double p,
+    public GeneFeatureMeasurements(final int numTASites, final int geneLength, final double numControlReads,
+                                   final double numExperimentReads, final double modifiedRatio, final double p,
                                    final double essentialityIndex, final double fitness)
     {
         this.numTASites = numTASites;
@@ -38,13 +38,13 @@ public final class GeneFeatureMeasurements
     }
 
     @SuppressWarnings("unused")
-    public int getNumControlReads()
+    public double getNumControlReads()
     {
         return numControlReads;
     }
 
     @SuppressWarnings("unused")
-    public int getNumExperimentReads()
+    public double getNumExperimentReads()
     {
         return numExperimentReads;
     }
@@ -71,5 +71,116 @@ public final class GeneFeatureMeasurements
     public double getFitness()
     {
         return fitness;
+    }
+
+    /**
+     * Created because feature stuff gets updated a fair amount. We want to keep features immutable, but allow this
+     * stuff to be changed while we're calculating it.
+     */
+    public static final class Builder
+    {
+        private int numTASites;
+        private int geneLength;
+        private double numControlReads;
+        private double numExperimentReads;
+        private double modifiedRatio;
+        private double p;
+        private double essentialityIndex;
+        private double fitness;
+
+
+        public int getNumTASites()
+        {
+            return numTASites;
+        }
+
+        public Builder withNumTASites(int numTASites)
+        {
+            this.numTASites = numTASites;
+            return this;
+        }
+
+        public int getGeneLength()
+        {
+            return geneLength;
+        }
+
+        public Builder withGeneLength(int geneLength)
+        {
+            this.geneLength = geneLength;
+            return this;
+        }
+
+        public double getNumControlReads()
+        {
+            return numControlReads;
+        }
+
+        public Builder withNumControlReads(double numControlReads)
+        {
+            this.numControlReads = numControlReads;
+            return this;
+        }
+
+        public double getNumExperimentReads()
+        {
+            return numExperimentReads;
+        }
+
+        public Builder withNumExperimentReads(double numExperimentReads)
+        {
+            this.numExperimentReads = numExperimentReads;
+            return this;
+        }
+
+        public double getModifiedRatio()
+        {
+            return modifiedRatio;
+        }
+
+        public Builder withModifiedRatio(double modifiedRatio)
+        {
+            this.modifiedRatio = modifiedRatio;
+            return this;
+        }
+
+        public double getP()
+        {
+            return p;
+        }
+
+        public Builder withP(double p)
+        {
+            this.p = p;
+            return this;
+        }
+
+        public double getEssentialityIndex()
+        {
+            return essentialityIndex;
+        }
+
+        public Builder withEssentialityIndex(double essentialityIndex)
+        {
+            this.essentialityIndex = essentialityIndex;
+            return this;
+        }
+
+        public double getFitness()
+        {
+            return fitness;
+        }
+
+        public Builder withFitness(double fitness)
+        {
+            this.fitness = fitness;
+            return this;
+        }
+
+        public GeneFeatureMeasurements build()
+        {
+            return new GeneFeatureMeasurements(numTASites, geneLength, numControlReads, numExperimentReads,
+                    modifiedRatio, p, essentialityIndex, fitness);
+        }
     }
 }

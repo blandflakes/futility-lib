@@ -1,5 +1,6 @@
 package org.machinery.futility.analysis;
 
+import org.apache.commons.math3.stat.inference.MannWhitneyUTest;
 import org.machinery.futility.analysis.stats.MultinomialDistribution;
 import org.machinery.futility.analysis.structs.Control;
 import org.machinery.futility.analysis.structs.SequenceMeasurements;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +44,8 @@ public final class Algorithms
             return 0;
         }
     };
+
+    private static final MannWhitneyUTest MWU_TEST = new MannWhitneyUTest();
 
     private Algorithms()
     {
@@ -243,9 +247,18 @@ public final class Algorithms
         return normalizedData;
     }
 
-    private static void groupReadsByGene(final List<IgvRecord> rawData, final Map<String, List<Double>> readsMap,
+    /**
+     * Iterates over the raw data. For each position, if it corresponds to a gene, we add the number to the list of
+     * reads in the map for that gene's name. We return the total number of reads added.
+     * @param rawData igv data to iterate over
+     * @param readsMap initialize map of gene name to empty list
+     * @param genomeMap map of gene name to gene objects
+     * @return the total number of reads added
+     */
+    private static double groupReadsByGene(final List<IgvRecord> rawData, final Map<String, List<Double>> readsMap,
                                          final Map<String, Gene> genomeMap)
     {
+        double totalCount = 0;
         for (final IgvRecord record : rawData)
         {
             final String geneName = record.getGeneName();
@@ -259,8 +272,85 @@ public final class Algorithms
                 if (start + (0.3 * geneLength) <= site && site <= (end - (0.3 * geneLength)))
                 {
                     readsMap.get(geneName).add(record.getReads());
+                    totalCount += record.getReads();
                 }
             }
+        }
+        return totalCount;
+    }
+
+    private static double sum(final List<Double> toSum)
+    {
+        double sum = 0;
+        for (final double num : toSum)
+        {
+            sum += num;
+        }
+        return sum;
+    }
+
+    private static double[] toDoubleArray(final List<Double> doubles)
+    {
+        final double[] array = new double[doubles.size()];
+        int index = 0;
+        for (final double num : doubles)
+        {
+            array[index] = num;
+            ++index;
+        }
+        return array;
+    }
+
+    private static void replacePWithBhq(final GeneFeatureMeasurements.Builder[] arr)
+    {
+        Arrays.sort(arr, new Comparator<GeneFeatureMeasurements.Builder>()
+        {
+            @Override
+            public int compare(GeneFeatureMeasurements.Builder o1, GeneFeatureMeasurements.Builder o2)
+            {
+                if (o1.getP() > o2.getP())
+                {
+                    return 1;
+                }
+                if (o1.getP() < o2.getP())
+                {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+
+        double minCoeff = arr[arr.length - 1].getP();
+        double coeff;
+        for (int i = arr.length - 2; i >= 0; --i)
+        {
+            coeff = arr.length * arr[i].getP() / (i + 1);
+            minCoeff = Math.min(coeff, minCoeff);
+            arr[i].withP(minCoeff);
+        }
+    }
+
+    private static void correctIndex(final GeneFeatureMeasurements.Builder[] arr)
+    {
+        Arrays.sort(arr, new Comparator<GeneFeatureMeasurements.Builder>()
+        {
+            @Override
+            public int compare(GeneFeatureMeasurements.Builder o1, GeneFeatureMeasurements.Builder o2)
+            {
+                if (o1.getFitness() > o2.getFitness())
+                {
+                    return 1;
+                }
+                if (o1.getFitness() < o2.getFitness())
+                {
+                    return -1;
+                }
+                return 0;
+            }
+        });
+        for (int i = 0; i < arr.length; ++i)
+        {
+            arr[i].withFitness(i / arr.length);
         }
     }
 
@@ -289,9 +379,51 @@ public final class Algorithms
             experimentReads.put(geneName, new ArrayList<Double>());
         }
 
-        groupReadsByGene(rawControlData, controlReads, genome.getMap());
-        groupReadsByGene(rawExperimentData, experimentReads, genome.getMap());
-        // Line 307 of analysis.js
+        final double totalControlReads = groupReadsByGene(rawControlData, controlReads, genome.getMap());
+        final double totalExperimentReads = groupReadsByGene(rawExperimentData, experimentReads, genome.getMap());
+        final double minControlReads = totalControlReads / 10000;
+        final double minExperimentReads = totalExperimentReads / 10000;
+
+        // We'll make a map of builders first, as we need to modify some values after accumulating the list
+        // but before creating the immutable feature measurements
+        final Map<String, GeneFeatureMeasurements.Builder> featureBuilders = new HashMap<>();
+        for (final String geneName : genome.getMap().keySet())
+        {
+            final Gene gene = genome.getMap().get(geneName);
+            final int geneLength = gene.getEnd() - gene.getStart();
+            final List<Double> controlReadsList = controlReads.get(geneName);
+            final List<Double> experimentReadsList = experimentReads.get(geneName);
+
+            GeneFeatureMeasurements.Builder featureBuilder = new GeneFeatureMeasurements.Builder()
+                    .withNumTASites(controlReadsList.size())
+                    .withNumControlReads(sum(controlReadsList))
+                    .withNumExperimentReads(sum(experimentReadsList))
+                    .withGeneLength(geneLength)
+                    .withP(MWU_TEST.mannWhitneyUTest(toDoubleArray(controlReadsList),
+                            toDoubleArray(experimentReadsList)));
+
+            final double significantControlReads = Math.min(featureBuilder.getNumControlReads(), minControlReads);
+            final double significantExperimentReads = Math.min(featureBuilder.getNumExperimentReads(), minExperimentReads);
+            final double correctedRatio = significantControlReads == 0 ? 0 : significantExperimentReads / significantControlReads;
+            final double essentialityIndex = significantExperimentReads / geneLength;
+            featureBuilder.withModifiedRatio(correctedRatio);
+            featureBuilder.withEssentialityIndex(essentialityIndex);
+            featureBuilder.withFitness(correctedRatio * essentialityIndex);
+
+            featureBuilders.put(geneName, featureBuilder);
+        }
+        GeneFeatureMeasurements.Builder[] featuresArray =
+                featureBuilders.values().toArray(new GeneFeatureMeasurements.Builder[featureBuilders.size()]);
+        replacePWithBhq(featuresArray);
+        correctIndex(featuresArray);
+        // We updated the objects through references, so now we can null out the large arrays while we do the final copy
+        featuresArray = null;
+        final Map<String, GeneFeatureMeasurements> features = new HashMap<>();
+        for (final String geneName : featureBuilders.keySet())
+        {
+            features.put(geneName, featureBuilders.get(geneName).build());
+        }
+        return features;
     }
 
     public static Experiment analyzeExperiment(final String name, final Genome genome, final Control control,
