@@ -9,6 +9,7 @@ public final class Experiment
     private final String controlName;
     private final SequenceMeasurements sequenceMeasurements;
     private final Map<String, GeneFeatureMeasurements> geneFeatureMeasurements;
+    private final String type = "experiment";
 
     public Experiment(final String name, final String genomeName, final String controlName,
                       final SequenceMeasurements sequenceMeasurements,
@@ -49,5 +50,11 @@ public final class Experiment
     public Map<String, GeneFeatureMeasurements> getGeneFeatureMeasurements()
     {
         return geneFeatureMeasurements;
+    }
+
+    @SuppressWarnings("unused")
+    public String getType()
+    {
+        return type;
     }
 }

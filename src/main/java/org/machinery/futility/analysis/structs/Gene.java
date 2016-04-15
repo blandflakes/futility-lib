@@ -30,7 +30,7 @@ public final class Gene
 
     public static Gene parseRecord(final String line)
     {
-        final String[] values = line.split("\\t");
+        final String[] values = line.split("\\s+");
         final String name;
         final int start, end;
         name = values[0];

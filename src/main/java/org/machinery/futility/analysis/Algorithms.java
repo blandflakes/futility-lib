@@ -28,6 +28,7 @@ import java.util.PriorityQueue;
 @SuppressWarnings("unused")
 public final class Algorithms
 {
+
     private static final Comparator<IgvRecord> IGV_RECORD_COMPARATOR = new Comparator<IgvRecord>()
     {
         @Override
@@ -46,6 +47,7 @@ public final class Algorithms
     };
 
     private static final MannWhitneyUTest MWU_TEST = new MannWhitneyUTest();
+
 
     private Algorithms()
     {
@@ -167,11 +169,11 @@ public final class Algorithms
         return new Control(name, genomeName, sequenceMeasurements);
     }
 
-    private static int[][] performSampling(final SequenceMeasurements normalizee,
-                                    final SequenceMeasurements normalizer)
+    private static int[][] performSampling(final SequenceMeasurements normalizee, final SequenceMeasurements normalizer)
     {
         final int normalizerCount = normalizer.getStats().get("siteHits");
         final int normalizeeCount = normalizee.getStats().get("siteHits");
+        final int normalizeeTotalSiteReads = normalizee.getStats().get("totalSiteReads");
 
         final double proportion = normalizerCount / (double) normalizeeCount;
         final List<IgvRecord> normalizeeRawData = normalizee.getRawData();
@@ -180,7 +182,7 @@ public final class Algorithms
         int index = 0;
         for (final IgvRecord record : normalizeeRawData)
         {
-            probabilityVector[index] = (proportion * record.getReads()) / normalizeeCount;
+            probabilityVector[index] = (proportion * record.getReads()) / normalizeeTotalSiteReads;
             ++index;
         }
         probabilityVector[probabilityVector.length - 1] = 1 - proportion;
@@ -215,13 +217,20 @@ public final class Algorithms
         return correctedData;
     }
 
+    /**
+     * Takes a list of samples, all the same length, and averages each column
+     * to create a new, one-dimensional sample of the same length
+     * @param correctedSamples array of samples to combine
+     * @return single sample whtat is the average of correctedSamples
+     */
     private static double[] collapseAndAverage(final double[][] correctedSamples)
     {
-        final int numSamples = correctedSamples[0].length;
-        final double[] averaged = new double[numSamples];
+        final int numSamples = correctedSamples.length;
+        final int lengthOfSamples = correctedSamples[0].length;
+        final double[] averaged = new double[lengthOfSamples];
         for (final double[] row : correctedSamples)
         {
-            for (int colNum = 0; colNum < row.length; ++colNum)
+            for (int colNum = 0; colNum < lengthOfSamples; ++colNum)
             {
                 final double value = row[colNum] / numSamples;
                 averaged[colNum] += value;
@@ -269,7 +278,7 @@ public final class Algorithms
                 final int start = gene.getStart();
                 final int end = gene.getEnd();
                 final int geneLength = end - start;
-                if (start + (0.3 * geneLength) <= site && site <= (end - (0.3 * geneLength)))
+                if (start + (0.03 * geneLength) <= site && site <= (end - (0.03 * geneLength)))
                 {
                     readsMap.get(geneName).add(record.getReads());
                     totalCount += record.getReads();
@@ -394,13 +403,23 @@ public final class Algorithms
             final List<Double> controlReadsList = controlReads.get(geneName);
             final List<Double> experimentReadsList = experimentReads.get(geneName);
 
-            GeneFeatureMeasurements.Builder featureBuilder = new GeneFeatureMeasurements.Builder()
+            final double p;
+            // Both lists should be of the same length, so just check one
+            if (controlReadsList.isEmpty())
+            {
+                p = 0.0;
+            }
+            else
+            {
+                p = MWU_TEST.mannWhitneyUTest(toDoubleArray(controlReadsList),
+                        toDoubleArray(experimentReadsList));
+            }
+            final GeneFeatureMeasurements.Builder featureBuilder = new GeneFeatureMeasurements.Builder()
                     .withNumTASites(controlReadsList.size())
                     .withNumControlReads(sum(controlReadsList))
                     .withNumExperimentReads(sum(experimentReadsList))
                     .withGeneLength(geneLength)
-                    .withP(MWU_TEST.mannWhitneyUTest(toDoubleArray(controlReadsList),
-                            toDoubleArray(experimentReadsList)));
+                    .withP(p);
 
             final double significantControlReads = Math.min(featureBuilder.getNumControlReads(), minControlReads);
             final double significantExperimentReads = Math.min(featureBuilder.getNumExperimentReads(), minExperimentReads);

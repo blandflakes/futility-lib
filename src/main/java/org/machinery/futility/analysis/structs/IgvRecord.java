@@ -43,7 +43,7 @@ public final class IgvRecord
 
     public static IgvRecord parseRecord(final String line)
     {
-        final String[] values = line.trim().split("\\t");
+        final String[] values = line.trim().split("\\s+");
         final int start, end;
         final double reads;
         start = Integer.parseInt(values[1]);

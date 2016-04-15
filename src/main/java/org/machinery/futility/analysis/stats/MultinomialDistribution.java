@@ -15,17 +15,21 @@ public final class MultinomialDistribution
         }
     }
 
-    private int indexOfContainingInterval(final double p)
+    private int firstLargerBinarySearch(final int start, final int end, final double target)
     {
-        // We could optimize this by doing a binary search. Should be fast enough, though.
-        for (int i = 0; i < probabilityIntervals.length; ++i)
+        // If start equals end, we're as close as we can get.
+        if (start == end)
         {
-            if (probabilityIntervals[i] > p)
-            {
-                return i;
-            }
+            return start;
         }
-        return probabilityIntervals.length - 1;
+        final int mid = (start + end) / 2;
+        if (probabilityIntervals[mid] >= target)
+        {
+            // include mid, in case it's the actual first element greater than or equal to target
+            return firstLargerBinarySearch(start, mid, target);
+        }
+        // Mid is less than target, so we exclude it
+        return firstLargerBinarySearch(mid + 1, end, target);
     }
 
     public int[] sample(final int numExperiments)
@@ -34,7 +38,7 @@ public final class MultinomialDistribution
         for (int i = numExperiments; i > 0; --i)
         {
             final double p = Math.random();
-            ++results[indexOfContainingInterval(p)];
+            ++results[firstLargerBinarySearch(0, probabilityIntervals.length - 1, p)];
         }
         return results;
     }
