@@ -96,7 +96,7 @@ public final class Algorithms
      */
     private static <T> T atPercentile(final double percentile, final List<T> data, final Comparator<T> comparator)
     {
-        final int thresholdIndex = (int) percentile * data.size();
+        final int thresholdIndex = (int) (percentile * data.size());
         final int queueSize = data.size() - thresholdIndex;
         // Construct a max queue
         final PriorityQueue<T> queue = new PriorityQueue<>(queueSize, comparator);
@@ -173,6 +173,7 @@ public final class Algorithms
     {
         final int normalizerCount = normalizer.getStats().get("siteHits");
         final int normalizeeCount = normalizee.getStats().get("siteHits");
+        final int normalizerTotalSiteReads = normalizer.getStats().get("totalSiteReads");
         final int normalizeeTotalSiteReads = normalizee.getStats().get("totalSiteReads");
 
         final double proportion = normalizerCount / (double) normalizeeCount;
@@ -191,7 +192,7 @@ public final class Algorithms
         final MultinomialDistribution multinomial = new MultinomialDistribution(probabilityVector);
         for (int i = 0; i < numSamples; ++i)
         {
-            samples[i] = multinomial.sample(normalizerCount);
+            samples[i] = multinomial.sample(normalizerTotalSiteReads);
         }
         return samples;
     }
@@ -252,6 +253,7 @@ public final class Algorithms
         for (final IgvRecord record : normalizee.getRawData())
         {
             normalizedData.add(new IgvRecord(record.getStart(), record.getEnd(), averaged[index], record.getGeneName()));
+            ++index;
         }
         return normalizedData;
     }
@@ -359,7 +361,7 @@ public final class Algorithms
         });
         for (int i = 0; i < arr.length; ++i)
         {
-            arr[i].withFitness(i / arr.length);
+            arr[i].withFitness(i / (double) arr.length);
         }
     }
 

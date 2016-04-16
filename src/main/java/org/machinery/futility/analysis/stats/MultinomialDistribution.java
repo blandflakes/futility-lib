@@ -6,6 +6,8 @@ public final class MultinomialDistribution
 
     public MultinomialDistribution(final double[] probabilities)
     {
+        // We could optimize this more if we only include significant windows, AKA thresholds where something actually
+        // changed. If we make a list of those and store a tuple of <threshold, index> we'll be better off.
         probabilityIntervals = new double[probabilities.length];
         double sum = 0;
         for (int i = 0; i < probabilities.length; ++i)
