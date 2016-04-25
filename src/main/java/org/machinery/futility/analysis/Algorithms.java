@@ -425,8 +425,8 @@ public final class Algorithms
                     .withGeneLength(geneLength)
                     .withP(p);
 
-            final double significantControlReads = Math.min(featureBuilder.getNumControlReads(), minControlReads);
-            final double significantExperimentReads = Math.min(featureBuilder.getNumExperimentReads(), minExperimentReads);
+            final double significantControlReads = Math.max(featureBuilder.getNumControlReads(), minControlReads);
+            final double significantExperimentReads = Math.max(featureBuilder.getNumExperimentReads(), minExperimentReads);
             final double correctedRatio = significantControlReads == 0 ? 0 : significantExperimentReads / significantControlReads;
             final double essentialityIndex = significantExperimentReads / geneLength;
             featureBuilder.withModifiedRatio(correctedRatio);
