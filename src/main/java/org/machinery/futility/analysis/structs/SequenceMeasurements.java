@@ -1,5 +1,6 @@
 package org.machinery.futility.analysis.structs;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -8,8 +9,9 @@ import java.util.Map;
  * experiments. We also have an index, which is used to quickly look up mappings relative to a position in the entire
  * genome.
  */
-public final class SequenceMeasurements
+public final class SequenceMeasurements implements Serializable
 {
+    private static final long serialVersionUID = -6934551457216078346L;
     private final List<IgvRecord> rawData;
     private final Map<Integer, Integer> index;
     private final Map<String, Integer> stats;

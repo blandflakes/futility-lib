@@ -1,7 +1,11 @@
 package org.machinery.futility.analysis.structs;
 
-public final class GeneFeatureMeasurements
+import java.io.Serializable;
+
+public final class GeneFeatureMeasurements implements Serializable
 {
+    private static final long serialVersionUID = 8720504952949642156L;
+    private final String condition;
     private final int numTASites;
     private final int geneLength;
     private final double numControlReads;
@@ -11,10 +15,13 @@ public final class GeneFeatureMeasurements
     private final double essentialityIndex;
     private final double fitness;
 
-    public GeneFeatureMeasurements(final int numTASites, final int geneLength, final double numControlReads,
-                                   final double numExperimentReads, final double modifiedRatio, final double p,
-                                   final double essentialityIndex, final double fitness)
+
+    public GeneFeatureMeasurements(final String condition, final int numTASites, final int geneLength,
+                                   final double numControlReads, final double numExperimentReads,
+                                   final double modifiedRatio, final double p,  final double essentialityIndex,
+                                   final double fitness)
     {
+        this.condition = condition;
         this.numTASites = numTASites;
         this.geneLength = geneLength;
         this.numControlReads = numControlReads;
@@ -23,6 +30,12 @@ public final class GeneFeatureMeasurements
         this.p = p;
         this.essentialityIndex = essentialityIndex;
         this.fitness = fitness;
+    }
+
+    @SuppressWarnings("unused")
+    public String getCondition()
+    {
+        return condition;
     }
 
     @SuppressWarnings("unused")
@@ -79,6 +92,7 @@ public final class GeneFeatureMeasurements
      */
     public static final class Builder
     {
+        private String condition;
         private int numTASites;
         private int geneLength;
         private double numControlReads;
@@ -88,6 +102,16 @@ public final class GeneFeatureMeasurements
         private double essentialityIndex;
         private double fitness;
 
+        public String getCondition()
+        {
+            return condition;
+        }
+
+        public Builder withCondition(final String condition)
+        {
+            this.condition = condition;
+            return this;
+        }
 
         public int getNumTASites()
         {
@@ -179,7 +203,7 @@ public final class GeneFeatureMeasurements
 
         public GeneFeatureMeasurements build()
         {
-            return new GeneFeatureMeasurements(numTASites, geneLength, numControlReads, numExperimentReads,
+            return new GeneFeatureMeasurements(condition, numTASites, geneLength, numControlReads, numExperimentReads,
                     modifiedRatio, p, essentialityIndex, fitness);
         }
     }

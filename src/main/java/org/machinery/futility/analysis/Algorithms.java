@@ -367,6 +367,7 @@ public final class Algorithms
 
     private static Map<String, GeneFeatureMeasurements> deriveFeatures(final Genome genome,
                                                                        final Control control,
+                                                                       final String name,
                                                                        final SequenceMeasurements experimentMeasurements)
     {
         final SequenceMeasurements controlMeasurements = control.getSequenceMeasurements();
@@ -417,6 +418,7 @@ public final class Algorithms
                         toDoubleArray(experimentReadsList));
             }
             final GeneFeatureMeasurements.Builder featureBuilder = new GeneFeatureMeasurements.Builder()
+                    .withCondition(name)
                     .withNumTASites(controlReadsList.size())
                     .withNumControlReads(sum(controlReadsList))
                     .withNumExperimentReads(sum(experimentReadsList))
@@ -456,7 +458,7 @@ public final class Algorithms
         final Map<String, Integer> stats = new HashMap<>();
         consumeDataSet(rawData, index, stats, inputStream);
         final SequenceMeasurements sequenceMeasurements = new SequenceMeasurements(rawData, index, stats);
-        final Map<String, GeneFeatureMeasurements> features = deriveFeatures(genome, control, sequenceMeasurements);
+        final Map<String, GeneFeatureMeasurements> features = deriveFeatures(genome, control, name, sequenceMeasurements);
         return new Experiment(name, genome.getName(), control.getName(), sequenceMeasurements, features);
     }
 }

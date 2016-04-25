@@ -1,7 +1,10 @@
 package org.machinery.futility.analysis.structs;
 
-public final class Control
+import java.io.Serializable;
+
+public final class Control implements Serializable
 {
+    private static final long serialVersionUID = 1974073000085438257L;
     private final String name;
     private final String genomeName;
     private final SequenceMeasurements sequenceMeasurements;

@@ -1,11 +1,14 @@
 package org.machinery.futility.analysis.structs;
 
+import java.io.Serializable;
+
 /**
  * Represents a record within an IGV file. These records, are parsed from
  * tab delimited lines in a file.
  */
-public final class IgvRecord
+public final class IgvRecord implements Serializable
 {
+    private static final long serialVersionUID = 5023223237667098932L;
     private final int start;
     private final int end;
     // Reads can be normalized, therefore they may be a double

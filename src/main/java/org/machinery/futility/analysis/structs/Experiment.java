@@ -1,9 +1,11 @@
 package org.machinery.futility.analysis.structs;
 
+import java.io.Serializable;
 import java.util.Map;
 
-public final class Experiment
+public final class Experiment implements Serializable
 {
+    private static final long serialVersionUID = -3741257474000113635L;
     private final String name;
     private final String genomeName;
     private final String controlName;

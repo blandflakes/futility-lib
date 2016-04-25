@@ -1,7 +1,10 @@
 package org.machinery.futility.analysis.structs;
 
-public final class Gene
+import java.io.Serializable;
+
+public final class Gene implements Serializable
 {
+    private static final long serialVersionUID = 2117680833317804366L;
     private final String name;
     private final int start;
     private final int end;
